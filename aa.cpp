@@ -224,24 +224,12 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
     {
         switch (key) {
             case GLFW_KEY_UP:
-                if(cannon_rot_angle<45)
-                {
                 cannonrotflag=1;    
                 newflagcannon++;
-                }
-              //  cannon_rot_angle+=1;}
-                // sx= sx - 0.02222;
-                //sy= sy + 0.02222;
                 break;
             case GLFW_KEY_DOWN:
-                if(cannon_rot_angle>-45)
-                {
                 cannonrotflag=-1;    
                 newflagcannon--;
-             //   cannon_rot_angle-=1;
-                }
-                //sx= sx - 0.02222;
-               // sy= sy - 0.02222;
                 break;
             case GLFW_KEY_SPACE:
                 powertimestart=glfwGetTime();
@@ -256,8 +244,8 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
                 bulletflag=1;
                 last_update_time=glfwGetTime();
                 powertimeend=glfwGetTime();
-                ux=(powertimeend-powertimestart)*7; 
-                uy=(powertimeend-powertimestart)*7;
+                ux=(powertimeend-powertimestart)*5; 
+               uy=(powertimeend-powertimestart)*3;
                 break;
             case GLFW_KEY_UP:
                 cannonrotflag=0;
@@ -351,7 +339,7 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
     Matrices.projection = glm::ortho(-12.0f, 12.0f, -8.0f, 8.0f, 0.1f, 500.0f);
 }
 
-VAO *bullet, *triangle, *rectangle, *cannon, *square1, *square2, *rectangle1, *rectangle2, *rectangle3, *square3, *square4, *square5;
+VAO *barrier1, *barrier2, *bullet, *triangle, *rectangle, *cannon, *square1, *square2, *rectangle1, *rectangle2, *rectangle3, *square3, *square4, *square5;
 
 // Creates the triangle object used in this sample code
 void createTriangle ()
@@ -405,7 +393,6 @@ void createRectangle ()
     // create3DObject creates and returns a handle to a VAO that can be used later
     rectangle = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
 }
-
 void createSquare1 ()
 {
     // GL3 accepts only Triangles. Quads are not supported
@@ -564,6 +551,60 @@ void createRectangle3()
     // create3DObject creates and returns a handle to a VAO that can be used later
     rectangle3 = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
 }
+void createBarrier1()
+{
+
+    // GL3 accepts only Triangles. Quads are not supported
+    static const GLfloat vertex_buffer_data [] = {
+        -0.15,-1.5,0, // vertex 1
+        -0.15,1.5,0, // vertex 2
+        0.15,1.5 ,0, // vertex 3
+
+        0.15,1.5,0, // vertex 3
+        0.15,-1.5,0, // vertex 4
+        -0.15,-1.5,0  // vertex 1
+    };
+
+    static const GLfloat color_buffer_data [] = {
+        0.4,0.8,0, // color 1
+        0.4,0.8,0, // color 2
+        0.4,0.8,0, // color 3
+
+        0.4,0.8,0, // color 3
+        0.4,0.8,0, // color 4
+        0.4,0.8,0  // color 1
+    };
+
+    // create3DObject creates and returns a handle to a VAO that can be used later
+    barrier1 = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
+}
+void createBarrier2()
+{
+
+    // GL3 accepts only Triangles. Quads are not supported
+    static const GLfloat vertex_buffer_data [] = {
+        -0.15,-1.5,0, // vertex 1
+        -0.15,1.5,0, // vertex 2
+        0.15,1.5 ,0, // vertex 3
+
+        0.15,1.5,0, // vertex 3
+        0.15,-1.5,0, // vertex 4
+        -0.15,-1.5,0  // vertex 1
+    };
+
+    static const GLfloat color_buffer_data [] = {
+        0.4,0.8,0, // color 1
+        0.4,0.8,0, // color 2
+        0.4,0.8,0, // color 3
+
+        0.4,0.8,0, // color 3
+        0.4,0.8,0, // color 4
+        0.4,0.8,0  // color 1
+    };
+
+    // create3DObject creates and returns a handle to a VAO that can be used later
+    barrier2 = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
+}
 void createSquare3 ()
 {
     // GL3 accepts only Triangles. Quads are not supported
@@ -676,7 +717,24 @@ float square5_rotation = 0;
 float bullet_rotation = 0;
 float triangle_rotation = 0;
 float cannon_rotation =0;
+float barrier1_rotation=0;
+float barrier2_rotation=0;
 
+void cannonanglecheck()
+{
+    if(cannonrotflag==1 && cannon_rotation<45)
+    {
+        cannon_rotation+=cannonrotflag;
+        sx=-9+2*cos(cannon_rotation*M_PI/180.0f);
+        sy=-4+2*sin((cannon_rotation)*M_PI/180.0f);
+    }
+    else if(cannonrotflag==-1 && cannon_rotation>-45)
+    {
+        cannon_rotation+=cannonrotflag;
+        sx=-9+2*cos(cannon_rotation*M_PI/180.0f);
+        sy=-4+2*sin(cannon_rotation*M_PI/180.0f);
+    }
+}
 /* Render the scene with openGL */
 /* Edit this function according to your assignment */
 void draw ()
@@ -769,11 +827,8 @@ void draw ()
     // Increment angles
     //  float increments = 1;
 
-    if(cannonrotflag!=0)
-    {
-        cannon_rotation+=cannonrotflag;
-       cannon_rot_angle+=cannon_rotation;
-    }
+    cannonanglecheck();
+
 
   /*  if(newflagcannon<oldflagcannon)
     {
@@ -919,8 +974,8 @@ void draw ()
     t= current_time - last_update_time;
     if(bulletflag==1)
     {
-    sx= -7+  ux*t+(0.5)*ax*t*t;
-    sy= -4+ uy*t+(0.5)*ay*t*t;
+    sx= sx+  ux*t+(0.5)*ax*t*t;
+    sy= sy+ uy*t+(0.5)*ay*t*t;
     }
    // last_update_time=current_time;
 //    bulletflag=0;
@@ -1002,6 +1057,47 @@ void draw ()
 
     //camera_rotation_angle++; // Simulating camera rotation
     // cannon_rotation = cannon_rotation + increments*rectangle_rot_dir*rectangle_rot_status;
+    
+    
+    
+    Matrices.model = glm::mat4(1.0f);
+    //slab=slab+0.1;
+    glm::mat4 translateBarrier1 = glm::translate (glm::vec3(-1, 3, 0));        // glTranslatef
+    //STOPPING ROTATION OF RECTANGLE
+     glm::mat4 rotateBarrier1 = glm::rotate((float)(barrier1_rotation*M_PI/180.0f), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
+    Matrices.model *= ((translateBarrier1)* rotateBarrier1);
+    MVP = VP * Matrices.model;
+    glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+    // draw3DObject draws the VAO given to it using current MVP matrix
+    draw3DObject(barrier1);
+
+    // Increment angles
+      float barrier1increments = 2;
+
+    //camera_rotation_angle++; // Simulating camera rotation
+     barrier1_rotation = barrier1_rotation - barrier1increments;
+    
+    
+    
+    
+    Matrices.model = glm::mat4(1.0f);
+    //slab=slab+0.1;
+    glm::mat4 translateBarrier2 = glm::translate (glm::vec3(-1, -3, 0));        // glTranslatef
+    //STOPPING ROTATION OF RECTANGLE
+     glm::mat4 rotateBarrier2 = glm::rotate((float)(barrier2_rotation*M_PI/180.0f), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
+    Matrices.model *=((translateBarrier2) * rotateBarrier2);
+    MVP = VP * Matrices.model;
+    glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+    // draw3DObject draws the VAO given to it using current MVP matrix
+    draw3DObject(barrier2);
+
+    // Increment angles
+      float barrier2increments = 2;
+
+    //camera_rotation_angle++; // Simulating camera rotation
+     barrier2_rotation = barrier2_rotation + barrier2increments;
 }
 
 /* Initialise glfw window, I/O callbacks and the renderer to use */
@@ -1070,6 +1166,8 @@ void initGL (GLFWwindow* window, int width, int height)
     createRectangle2 ();
     createRectangle3 ();
     createBullet();
+    createBarrier1();
+    createBarrier2();
 
     // Create and compile our GLSL program from the shaders
     programID = LoadShaders( "Sample_GL.vert", "Sample_GL.frag" );
