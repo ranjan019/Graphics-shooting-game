@@ -211,11 +211,24 @@ float rectangle_rot_dir = 1;
 bool triangle_rot_status = true;
 bool rectangle_rot_status = true;
 float cannon_rot_increment = 0;
-int  newflagcannon=0, oldflagcannon=0, bulletflag=0;;
+int  newflagcannon=0, oldflagcannon=0, bulletflag=0;
 float cannonrotflag=0;
-float ux=0,uy=0, vx=0, vy=0, sx=-7, sy=-4, ax=-2, ay=-8;
+float ux=0,uy=0, vx, vy, sx=-7, sy=-4, ax, ay,powerfac=2;
+float cannon_rotation =0;
+float zoom=1, a=-12.0f, b=12.0f, c=-8.0f, d=8.0f;;
 /* Executed when a regular key is pressed/released/held-down */
 /* Prefered for Keyboard events */
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    if(yoffset>0)
+    {  if(zoom<=0.990)  
+        zoom+=0.01;
+    Matrices.projection = glm::ortho(a*zoom, b*zoom, c*zoom, d*zoom, 0.1f, 500.0f);
+    } else{
+        zoom-=0.01;
+    Matrices.projection = glm::ortho(a*zoom, b*zoom, c*zoom, d*zoom, 0.1f, 500.0f);
+}}
+
 void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     // Function is called first on GLFW_PRESS.
@@ -244,14 +257,17 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
                 bulletflag=1;
                 last_update_time=glfwGetTime();
                 powertimeend=glfwGetTime();
-                ux=(powertimeend-powertimestart)*5; 
-               uy=(powertimeend-powertimestart)*3;
+        //        powerfac=0.5;
+                ux=((powertimeend-powertimestart)*powerfac)*cos(cannon_rotation*M_PI/180.0f); 
+                uy=((powertimeend-powertimestart)*powerfac)*sin(cannon_rotation*M_PI/180.0f); 
                 break;
             case GLFW_KEY_UP:
                 cannonrotflag=0;
                 break;
             case GLFW_KEY_DOWN:
                 cannonrotflag=0;
+                break;
+            default:
                 break;
         }
     }
@@ -289,6 +305,18 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
         case 'q':
             quit(window);
             break;
+        case 'o':
+            if(zoom<=0.995)
+            zoom=zoom+0.005;
+    Matrices.projection = glm::ortho(a*zoom, b*zoom, c*zoom, d*zoom, 0.1f, 500.0f);
+            //printf("%f\n",zoom);
+            break;
+        case 'p':
+            if(zoom>0.005)
+            zoom=zoom-0.005;
+            //printf("%f\n",zoom);
+    Matrices.projection = glm::ortho(a*zoom, b*zoom, c*zoom, d*zoom, 0.1f, 500.0f);
+            break;
         default:
             break;
     }
@@ -299,14 +327,21 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 {
     switch (button) {
         case GLFW_MOUSE_BUTTON_LEFT:
-            if (action == GLFW_RELEASE)
-                triangle_rot_dir *= -1;
+            if (action == GLFW_PRESS)
+                powertimestart=glfwGetTime();
+            else if (action == GLFW_RELEASE)
+                bulletflag=1;
+                last_update_time=glfwGetTime();
+                powertimeend=glfwGetTime();
+        //        powerfac=0.5;
+                ux=((powertimeend-powertimestart)*powerfac)*cos(cannon_rotation*M_PI/180.0f); 
+                uy=((powertimeend-powertimestart)*powerfac)*sin(cannon_rotation*M_PI/180.0f); 
             break;
-        case GLFW_MOUSE_BUTTON_RIGHT:
-            if (action == GLFW_RELEASE) {
-                rectangle_rot_dir *= -1;
-            }
-            break;
+   //     case GLFW_MOUSE_BUTTON_RIGHT:
+     //       if (action == GLFW_RELEASE) {
+       //         rectangle_rot_dir *= -1;
+         //   }
+           // break;
         default:
             break;
     }
@@ -336,7 +371,9 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
     // Matrices.projection = glm::perspective (fov, (GLfloat) fbwidth / (GLfloat) fbheight, 0.1f, 500.0f);
 
     // Ortho projection for 2D views
-    Matrices.projection = glm::ortho(-12.0f, 12.0f, -8.0f, 8.0f, 0.1f, 500.0f);
+//     printf("%f\n",zoom);
+  //   float a=-(12.0f)*zoom, b= (12.0f)*zoom, c=-(8.0f)*zoom, d=(8.0f)*zoom;
+    Matrices.projection = glm::ortho(a*zoom, b*zoom, c*zoom, d*zoom, 0.1f, 500.0f);
 }
 
 VAO *barrier1, *barrier2, *bullet, *triangle, *rectangle, *cannon, *square1, *square2, *rectangle1, *rectangle2, *rectangle3, *square3, *square4, *square5;
@@ -381,13 +418,13 @@ void createRectangle ()
     };
 
     static const GLfloat color_buffer_data [] = {
-        1,0,0, // color 1
-        1,0,0, // color 2
-        1,0,0, // color 3
+        0.97,0.3,0.3, // color 1
+        0.97,0.3,0.3, // color 2
+        0.97,0.3,0.3, // color 3
 
-        1,0,0, // color 3
-        1,0,0, // color 4
-        1,0,0  // color 1
+        0.97,0.3,0.3, // color 3
+        0.97,0.3,0.3, // color 4
+        0.97,0.3,0.3  // color 1
     };
 
     // create3DObject creates and returns a handle to a VAO that can be used later
@@ -716,13 +753,37 @@ float rectangle_rotation = 0;
 float square5_rotation = 0;
 float bullet_rotation = 0;
 float triangle_rotation = 0;
-float cannon_rotation =0;
 float barrier1_rotation=0;
 float barrier2_rotation=0;
 
+void resetprojectile()
+{
+    vx=ux+ax*t;
+    vy=uy+ay*t;
+    last_update_time=glfwGetTime();
+}
+
+int checkcollisionbarrier()
+{
+        
+    float dis1=abs(sy-(tan(barrier1_rotation*M_PI/180.0f))*sx -3 -tan(barrier1_rotation*M_PI/180.0f))/sqrt(1+tan(barrier1_rotation*M_PI/180.0f)*tan(barrier1_rotation*M_PI/180.0f));
+        
+    float dis2=abs(sy-(tan(barrier2_rotation*M_PI/180.0f))*sx +3 -tan(barrier2_rotation*M_PI/180.0f))/sqrt(1+tan(barrier2_rotation*M_PI/180.0f)*tan(barrier2_rotation*M_PI/180.0f));
+    //printf("%f %f\n",dis1,dis2);
+        
+    float dis3=sqrt(pow((sx+1),2)+pow((sy-3),2)); 
+    float dis4=sqrt(pow((sx+1),2)+pow((sy+3),2));
+
+    if((dis1<=0.2 && dis3<=1.5) || (dis2<=0.2 && dis4<=1.5))   
+        {
+            return 1;
+        }
+    
+}
+
 void cannonanglecheck()
 {
-    if(cannonrotflag==1 && cannon_rotation<45)
+    if(cannonrotflag==1 && cannon_rotation<75)
     {
         cannon_rotation+=cannonrotflag;
         sx=-9+2*cos(cannon_rotation*M_PI/180.0f);
@@ -968,35 +1029,6 @@ void draw ()
     square5_rotation = square5_rotation + increments; //*rectangle_rot_dir*rectangle_rot_status;
 
 
-    //slab=slab+0.1;
-    
-    current_time = glfwGetTime();
-    t= current_time - last_update_time;
-    if(bulletflag==1)
-    {
-    sx= sx+  ux*t+(0.5)*ax*t*t;
-    sy= sy+ uy*t+(0.5)*ay*t*t;
-    }
-   // last_update_time=current_time;
-//    bulletflag=0;
-    
-    Matrices.model = glm::mat4(1.0f);
-    glm::mat4 translateBullet = glm::translate (glm::vec3(sx,sy , 0));        // glTranslatef
-    //translateBullet *= glm::translate (glm::vec3(sx,sy , 0));        // glTranslatef
-    glm::mat4 rotateBullet = glm::rotate((float)(bullet_rotation*M_PI/180.0f), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
-    Matrices.model *= ((translateBullet * rotateBullet));
-    MVP = VP * Matrices.model;
-    glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-
-    // draw3DObject draws the VAO given to it using current MVP matrix
-    draw3DObject(bullet);
-
-    //  Increment angles
-    float increments2 = 100;
-
-    //camera_rotation_angle++; // Simulating camera rotation
-    bullet_rotation = bullet_rotation + increments2; //*rectangle_rot_dir*rectangle_rot_status;
-
 
 
 
@@ -1077,7 +1109,7 @@ void draw ()
 
     //camera_rotation_angle++; // Simulating camera rotation
      barrier1_rotation = barrier1_rotation - barrier1increments;
-    
+  // printf("%f\n",barrier1_rotation); 
     
     
     
@@ -1098,6 +1130,87 @@ void draw ()
 
     //camera_rotation_angle++; // Simulating camera rotation
      barrier2_rotation = barrier2_rotation + barrier2increments;
+   
+     
+     
+     
+     
+     
+     //slab=slab+0.1;
+   // if(sy < -5.8)
+   // {
+  //      uy=
+   vx=ux+ax*t;
+   if(vx<0.01)
+       ax=0;
+    current_time = glfwGetTime();
+    
+    t= current_time - last_update_time;
+    t=t/10;
+    if(bulletflag==1)
+    {
+    sx= sx+  ux*t+(0.5)*ax*t*t;
+    sy= sy+ uy*t+(0.5)*ay*t*t;
+    }
+   // printf("%f\n",uy);
+   // last_update_time=current_time;
+//    bulletflag=0;
+   int mmm=checkcollisionbarrier();
+   if(mmm==1)
+   {
+       sx=sx-0.3;
+       if((sy>=-3 && sy<=-1.5) || (sy >=3 && sy<=4.5))
+       uy+=1;
+       else if((sy<-3 && sy>=-4.5) || (sy <3 && sy >=1.5))
+           uy-=1;
+       resetprojectile();
+       ux=-vx;
+   }
+
+  
+   if(sy<=-5.9)
+   {
+       resetprojectile();
+       vx=ux+ax*t;
+       vy=uy+ay*t;
+  //     if(vx>0.0001 && vy>0.0001)
+    //   {
+       sy=-6+0.12;
+      // }
+       uy=-(vy*(1.0))/4;
+       ux=vx*3/5;
+       //sy+=1;
+   }
+    Matrices.model = glm::mat4(1.0f);
+    glm::mat4 translateBullet = glm::translate (glm::vec3(sx,sy , 0));        // glTranslatef
+    //translateBullet *= glm::translate (glm::vec3(sx,sy , 0));        // glTranslatef
+    glm::mat4 rotateBullet = glm::rotate((float)(bullet_rotation*M_PI/180.0f), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
+    Matrices.model *= ((translateBullet * rotateBullet));
+    MVP = VP * Matrices.model;
+    glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+    // draw3DObject draws the VAO given to it using current MVP matrix
+    draw3DObject(bullet);
+
+    //  Increment angles
+   // if(bullet
+    float increments2 = 100;
+  //  if(vx<0.01 && vy<0.01 && sy<=-5.9)
+   // {
+     //   ux=0;
+       // uy=0;
+       // bullet_rotation=0;
+       // if(bullet_rotation>0)
+       // increments2-=40;
+   // }
+ //   if(bullet_rotation<=0)
+   // {
+   
+
+
+    //camera_rotation_angle++; // Simulating camera rotation
+    bullet_rotation = bullet_rotation + increments2; //*rectangle_rot_dir*rectangle_rot_status;
+
 }
 
 /* Initialise glfw window, I/O callbacks and the renderer to use */
@@ -1192,8 +1305,27 @@ void initGL (GLFWwindow* window, int width, int height)
 
 int main (int argc, char** argv)
 {
+    float gravityvariable, airvar;
     int width = 900;
     int height = 600;
+    printf("Where would you like to play the game?\n");
+    printf("Input 1 for earth and 2 for moon\n");
+    scanf("%f",&gravityvariable);
+    printf("\n");
+    printf("What do you want the air-resistance to be?\n");
+    printf("Input 1 for low, 2 for medium and 3 for high\n");
+    scanf("%f",&airvar);
+
+    if(gravityvariable==1)
+        ay=-15;
+    else
+        ay=-7;
+    if(airvar==1)
+        ax=-1;
+    else if(airvar==2)
+        ax=-4;
+    else 
+        ax=-8;
 
     GLFWwindow* window = initGLFW(width, height);
 
@@ -1212,6 +1344,7 @@ int main (int argc, char** argv)
 
         // Poll for Keyboard and mouse events
         glfwPollEvents();
+        glfwSetScrollCallback(window, scroll_callback);
 
         // Control based on time (Time based transformation like 5 degrees rotation every 0.5s)
 /*        current_time = glfwGetTime(); // Time in seconds
